@@ -4,119 +4,283 @@
 <title>GAMERSTER OFFICIAL SITE</title>
 
 <style>
-body{
-    background:black;
-    color:lime;
-    font-family:"Comic Sans MS",cursive;
-    text-align:center;
+html, body {
+    margin: 0;
+    padding: 0;
+    background-color: black;
+    font-family: "Comic Sans MS", "Comic Sans", cursive;
+    color: lime;
 }
-input,button{
-    margin:5px;
-    padding:5px;
+
+body {
+    background: repeating-linear-gradient(
+        45deg,
+        #000000,
+        #000000 10px,
+        #111111 10px,
+        #111111 20px
+    );
+    animation: bgmove 5s linear infinite;
+}
+
+@keyframes bgmove {
+    from { background-position: 0 0; }
+    to { background-position: 100px 100px; }
+}
+
+a {
+    color: yellow;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+table {
+    background-color: black;
+    border: 3px solid cyan;
+}
+
+.header {
+    background: navy;
+    color: white;
+    font-size: 28px;
+    text-align: center;
+}
+
+.sidebar {
+    background: purple;
+    width: 200px;
+    vertical-align: top;
+}
+
+.content {
+    background: #111;
+}
+
+.footer {
+    background: darkred;
+    text-align: center;
+    font-size: 12px;
+}
+
+.blink {
+    animation: blink 1s steps(2, start) infinite;
+}
+
+@keyframes blink {
+    to { visibility: hidden; }
+}
+
+button {
+    cursor: pointer;
+}
+input {
+    width: 100%;
+    padding: 5px;
+    margin: 5px 0;
+    box-sizing: border-box;
 }
 </style>
 
-<!-- FIREBASE -->
+<!-- Firebase SDK -->
 <script type="module">
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-
-import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  onAuthStateChanged,
-  signOut
+import { 
+  getAuth, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  onAuthStateChanged, 
+  signOut 
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-
-/* 🔥 REPLACE WITH YOUR CONFIG */
+/* 🔥 REPLACE WITH YOUR FIREBASE CONFIG */
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  appId: "YOUR_APP_ID"
-};
+  apiKey: "AIzaSyDDmNkZUqSmyzfQDTimULkOSQP1dJBJf44",
+  authDomain: "Gamester.firebaseapp.com",
+  projectId: "gamester-4ed42",
+  appId: "1:282606109886:web:eec0b7d6077133eab4caef"};
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
+/* Create Account */
+function createAccount() {
+    const username = document.getElementById("usernameBox").value.trim();
+    const password = document.getElementById("passwordBox").value.trim();
 
-/* CREATE ACCOUNT */
-window.createAccount = function () {
+    if(username === "" || password === "") {
+        document.getElementById("loginStatus").innerHTML = "ENTER USERNAME AND PASSWORD!!!";
+        return;
+    }
 
-  const user = document.getElementById("usernameBox").value;
-  const pass = document.getElementById("passwordBox").value;
+    const email = username + "@gamester.fun"; // fake email for Firebase
 
-  const fakeEmail = user + "@gamester.fun";
-
-  createUserWithEmailAndPassword(auth, fakeEmail, pass)
+    createUserWithEmailAndPassword(auth, email, password)
     .then(() => {
-      document.getElementById("status").innerHTML =
-        "✔ ACCOUNT CREATED!";
+        document.getElementById("loginStatus").innerHTML = "✔ ACCOUNT CREATED! Welcome <b>" + username + "</b>!";
     })
-    .catch(err => {
-      document.getElementById("status").innerHTML =
-        err.message;
+    .catch((err) => {
+        document.getElementById("loginStatus").innerHTML = err.message;
     });
-};
+}
 
+/* Login */
+function login() {
+    const username = document.getElementById("usernameBox").value.trim();
+    const password = document.getElementById("passwordBox").value.trim();
 
-/* LOGIN */
-window.login = function () {
+    const email = username + "@gamester.fun";
 
-  const user = document.getElementById("usernameBox").value;
-  const pass = document.getElementById("passwordBox").value;
-
-  const fakeEmail = user + "@gamester.fun";
-
-  signInWithEmailAndPassword(auth, fakeEmail, pass)
+    signInWithEmailAndPassword(auth, email, password)
     .then(() => {
-      document.getElementById("status").innerHTML =
-        "✔ LOGGED IN!";
+        document.getElementById("loginStatus").innerHTML = "✔ Logged in as <b>" + username + "</b>!";
     })
     .catch(() => {
-      document.getElementById("status").innerHTML =
-        "WRONG LOGIN!";
+        document.getElementById("loginStatus").innerHTML = "WRONG LOGIN!!!";
     });
-};
+}
 
+/* Show game link */
+function showGameLink() {
+    const linkArea = document.getElementById("gameLinkArea");
+    linkArea.innerHTML =
+        "CLICK THE LINK TO PLAY:<br><br>" +
+        "<a href='https://drive.google.com/file/d/13srsf6tATf60bsFoflp6uOWZKzSP0ORE/view?usp=sharing'>" +
+        "▶ PLAY GAMERSTER ◀</a>";
+}
 
-/* AUTO LOGIN STATUS */
-onAuthStateChanged(auth,(user)=>{
-  if(user){
-    document.getElementById("status").innerHTML =
-      "Logged in as: " + user.email.replace("@gamester.fun","");
-  }
+/* Page navigation */
+function showHome() {
+    document.getElementById("homePage").style.display = "block";
+    document.getElementById("newsPage").style.display = "none";
+}
+function showNews() {
+    document.getElementById("homePage").style.display = "none";
+    document.getElementById("newsPage").style.display = "block";
+}
+
+/* Auto login state (optional) */
+onAuthStateChanged(auth, (user) => {
+    if(user) {
+        const username = user.email.replace("@gamester.fun","");
+        document.getElementById("loginStatus").innerHTML = "Logged in as: <b>" + username + "</b>";
+    }
 });
 
+window.createAccount = createAccount;
+window.login = login;
+window.showGameLink = showGameLink;
+window.showHome = showHome;
+window.showNews = showNews;
 
-/* LOGOUT */
-window.logout=function(){
-  signOut(auth);
-};
-
+window.onload = showHome;
 </script>
 
 </head>
 
 <body>
 
-<h1>🔥 GAMERSTER OFFICIAL SITE 🔥</h1>
+<p>&nbsp;</p>
+
+<center>
+<table width="900" cellspacing="0" cellpadding="10">
+<tbody>
+
+<tr>
+<td class="header" colspan="2">
+GAMERSTER OFFICIAL SITE<br>
+<marquee scrollamount="6">🔥 Welcome to the OFFICIAL Gamester Website, True Gamesters Love It! 🔥</marquee>
+</td>
+</tr>
+
+<tr>
+
+<td class="sidebar">
+<strong>Navigation</strong><br><br>
+<a onclick="showHome()">Home</a><br>
+<a onclick="showNews()">News</a><br>
+<a onclick="showHome()">Play Game</a><br>
+<a href="#">Guestbook</a><br>
+<a href="#">Links</a><br><br>
+
+<div class="blink">UNDER CONSTRUCTION</div>
+
+<br><br>
+Visitor Counter:<br>
+0001337
+</td>
+
+<td class="content">
+
+<!-- HOME PAGE -->
+<div id="homePage">
+
+<h2>Welcome to Gamester!</h2>
+
+<p>This is the OFFICIAL website for Gamester!!!</p>
+
+<hr>
 
 <h3>Member Login</h3>
 
-Username<br>
-<input id="usernameBox"><br>
+<div style="background:black; border:2px dashed cyan; padding:10px; width:300px;">
+Username:<br>
+<input type="text" id="usernameBox"><br><br>
 
-Password<br>
-<input type="password" id="passwordBox"><br>
+Password:<br>
+<input type="password" id="passwordBox"><br><br>
 
-<button onclick="login()">LOGIN</button>
-<button onclick="createAccount()">MAKE ACCOUNT</button>
-<button onclick="logout()">LOGOUT</button>
+<button onclick="login()" style="background:yellow; color:black; font-weight:bold;">
+LOGIN
+</button>
 
-<p id="status"></p>
+<button onclick="createAccount()" style="background:lime; color:black; font-weight:bold;">
+MAKE ACCOUNT
+</button>
+
+<p id="loginStatus" style="color:lime;"></p>
+</div>
+
+<hr>
+
+<h3>Play</h3>
+
+<button onclick="showGameLink()"
+style="font-size:20px; background:lime; color:black;">
+CLICK HERE TO PLAY!!!
+</button>
+
+<br><br>
+
+<div id="gameLinkArea" style="color:yellow; font-size:18px;"></div>
+
+<br>
+
+<div class="blink">BEST VIEWED IN 480x360</div>
+
+</div>
+
+<!-- NEWS PAGE -->
+<div id="newsPage" style="display:none;">
+
+<h2>Gamester now has a website!</h2>
+
+<p>That’s right! Gamester has some updated faces and a cool new website.</p>
+
+</div>
+
+</td>
+</tr>
+
+<tr>
+<td class="footer" colspan="2">
+© 2026-2029 Gamester.fun<br>
+Best viewed in 480x360 resolution | Chrome 143 Recommended
+</td>
+</tr>
+
+</tbody>
+</table>
+</center>
 
 </body>
 </html>
