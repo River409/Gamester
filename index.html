@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Gamester</title>
+<title>GAMERSTER OFFICIAL SITE</title>
 
 <style>
 html, body {margin:0; padding:0; background:black; font-family:"Comic Sans MS",cursive; color:lime;}
@@ -17,12 +17,13 @@ table {background:black; border:3px solid cyan;}
 @keyframes blink {to {visibility:hidden;}}
 button {cursor:pointer; margin:2px;}
 input {width:100%; padding:5px; margin:5px 0; box-sizing:border-box;}
+.user-entry {background:#222; color:lime; padding:5px; margin:3px; border:1px solid cyan;}
 </style>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDocs, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* 🔥 REPLACE WITH YOUR FIREBASE CONFIG */
 const firebaseConfig = {
@@ -38,7 +39,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-/* CREATE ACCOUNT */
+/* ACCOUNT CREATION */
 async function createAccount() {
     const username = document.getElementById("usernameBox").value.trim();
     const password = document.getElementById("passwordBox").value.trim();
@@ -52,12 +53,9 @@ async function createAccount() {
         document.getElementById("loginStatus").innerHTML = "✔ ACCOUNT CREATED! Welcome <b>"+username+"</b>!";
         await setDoc(doc(db,"users",username),{
             username: username,
-            displayName: username,
-            score: 0,
-            bio: "I am new to Gamester!",
             joinDate: serverTimestamp()
         });
-        await showAllProfiles();
+        await showUsersList();
     })
     .catch(err=>{
         document.getElementById("loginStatus").innerHTML = err.message;
@@ -72,7 +70,7 @@ async function login() {
     signInWithEmailAndPassword(auth,email,password)
     .then(async ()=>{
         document.getElementById("loginStatus").innerHTML="✔ Logged in as <b>"+username+"</b>!";
-        await showAllProfiles();
+        await showUsersList();
     })
     .catch(()=>{document.getElementById("loginStatus").innerHTML="WRONG LOGIN!!!";});
 }
@@ -80,16 +78,24 @@ async function login() {
 /* LOGOUT */
 function logout(){ signOut(auth); }
 
+/* SHOW USERS PAGE */
+function showUsersPage(){
+    document.getElementById("homePage").style.display="none";
+    document.getElementById("newsPage").style.display="none";
+    document.getElementById("usersPage").style.display="block";
+    showUsersList();
+}
+
+/* PAGE NAVIGATION */
+function showHome(){document.getElementById("homePage").style.display="block"; document.getElementById("newsPage").style.display="none"; document.getElementById("usersPage").style.display="none";}
+function showNews(){document.getElementById("homePage").style.display="none"; document.getElementById("newsPage").style.display="block"; document.getElementById("usersPage").style.display="none";}
+
 /* SHOW GAME LINK */
 function showGameLink(){
     document.getElementById("gameLinkArea").innerHTML =
         "CLICK THE LINK TO PLAY:<br><br>" +
         "<a href='https://drive.google.com/file/d/13srsf6tATf60bsFoflp6uOWZKzSP0ORE/view?usp=sharing'>▶ PLAY GAMERSTER ◀</a>";
 }
-
-/* PAGE NAVIGATION */
-function showHome(){document.getElementById("homePage").style.display="block"; document.getElementById("newsPage").style.display="none";}
-function showNews(){document.getElementById("homePage").style.display="none"; document.getElementById("newsPage").style.display="block";}
 
 /* AUTO LOGIN STATUS */
 onAuthStateChanged(auth,(user)=>{
@@ -99,34 +105,18 @@ onAuthStateChanged(auth,(user)=>{
     }
 });
 
-/* VIEW PROFILE */
-async function viewProfile(username){
-    const docRef = doc(db,"users",username);
-    const docSnap = await getDoc(docRef);
-    if(docSnap.exists()){
-        const data = docSnap.data();
-        const join = data.joinDate?.toDate ? data.joinDate.toDate().toLocaleString() : "Unknown";
-        alert(
-            "Username: "+data.username+"\n"+
-            "Display Name: "+data.displayName+"\n"+
-            "Score: "+data.score+"\n"+
-            "Bio: "+data.bio+"\n"+
-            "Join Date: "+join
-        );
-    } else { alert("Profile not found!"); }
-}
-
-/* SHOW ALL PROFILES */
-async function showAllProfiles(){
+/* DISPLAY USERS FROM FIRESTORE */
+async function showUsersList(){
     const querySnapshot = await getDocs(collection(db,"users"));
-    const listDiv = document.getElementById("userList");
-    listDiv.innerHTML="";
-    querySnapshot.forEach((doc)=>{
-        const username = doc.data().username;
-        const btn = document.createElement("button");
-        btn.innerText = username;
-        btn.onclick = ()=>viewProfile(username);
-        listDiv.appendChild(btn);
+    const container = document.getElementById("userList");
+    container.innerHTML = "";
+    querySnapshot.forEach(doc=>{
+        const data = doc.data();
+        const join = data.joinDate?.toDate ? data.joinDate.toDate().toLocaleString() : "Unknown";
+        const div = document.createElement("div");
+        div.className="user-entry";
+        div.innerText = "Username: " + data.username + " | Join Date: " + join;
+        container.appendChild(div);
     });
 }
 
@@ -136,10 +126,9 @@ window.logout=logout;
 window.showGameLink=showGameLink;
 window.showHome=showHome;
 window.showNews=showNews;
-window.viewProfile=viewProfile;
-window.showAllProfiles=showAllProfiles;
+window.showUsersPage=showUsersPage;
 
-window.onload=function(){ showHome(); showAllProfiles(); }
+window.onload=function(){ showHome(); }
 
 </script>
 </head>
@@ -162,22 +151,23 @@ GAMERSTER OFFICIAL SITE<br>
 <strong>Navigation</strong><br><br>
 <a onclick="showHome()">Home</a><br>
 <a onclick="showNews()">News</a><br>
-<a onclick="showHome()">Play Game</a><br>
+<a onclick="showUsersPage()">Play Game</a><br>
 <a href="#">Guestbook</a><br>
 <a href="#">Links</a><br><br>
 <div class="blink">UNDER CONSTRUCTION</div>
 <br><br>
+Visitor Counter:<br>
+0001337
+</td>
 
 <td class="content">
 
 <!-- HOME PAGE -->
 <div id="homePage">
-
 <h2>Welcome to Gamester!</h2>
 <p>This is the OFFICIAL website for Gamester!!!</p>
 
 <hr>
-
 <h3>Member Login</h3>
 <div style="background:black; border:2px dashed cyan; padding:10px; width:300px;">
 Username:<br>
@@ -191,26 +181,25 @@ Password:<br>
 </div>
 
 <hr>
-
 <h3>Play</h3>
 <button onclick="showGameLink()" style="font-size:20px;background:lime;color:black;">CLICK HERE TO PLAY!!!</button>
 <br><br>
 <div id="gameLinkArea" style="color:yellow;font-size:18px;"></div>
 
-<hr>
-
-<h3>All Users</h3>
-<div id="userList"></div>
-
 <br>
 <div class="blink">BEST VIEWED IN 480x360</div>
-
 </div>
 
 <!-- NEWS PAGE -->
 <div id="newsPage" style="display:none;">
 <h2>Gamester now has a website!</h2>
 <p>That’s right! Gamester has some updated faces and a cool new website.</p>
+</div>
+
+<!-- USERS PAGE -->
+<div id="usersPage" style="display:none;">
+<h2>All Users</h2>
+<div id="userList"></div>
 </div>
 
 </td>
