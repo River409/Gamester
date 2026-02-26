@@ -4,41 +4,27 @@
 <title>GAMERSTER OFFICIAL SITE</title>
 
 <style>
-html, body {
-    margin:0;
-    padding:0;
-    background:black;
-    font-family:"Comic Sans MS", cursive;
-    color:lime;
-}
-body {
-    background: repeating-linear-gradient(
-        45deg,#000,#000 10px,#111 10px,#111 20px
-    );
-    animation: bgmove 5s linear infinite;
-}
-@keyframes bgmove { from {background-position:0 0;} to {background-position:100px 100px;} }
-
-a { color:yellow; font-weight:bold; cursor:pointer; }
-
-table { background:black; border:3px solid cyan; }
-.header { background:navy;color:white;font-size:28px;text-align:center; }
-.sidebar { background:purple;width:200px;vertical-align:top; }
-.content { background:#111; }
-.footer { background:darkred;text-align:center;font-size:12px; }
-.blink { animation: blink 1s steps(2,start) infinite; }
-@keyframes blink { to {visibility:hidden;} }
-button { cursor:pointer; margin:2px; }
-input { width:100%; padding:5px; margin:5px 0; box-sizing:border-box; }
+html, body {margin:0; padding:0; background:black; font-family:"Comic Sans MS",cursive; color:lime;}
+body {background:repeating-linear-gradient(45deg,#000,#000 10px,#111 10px,#111 20px); animation:bgmove 5s linear infinite;}
+@keyframes bgmove {from {background-position:0 0;} to {background-position:100px 100px;}}
+a {color:yellow; font-weight:bold; cursor:pointer;}
+table {background:black; border:3px solid cyan;}
+.header {background:navy;color:white;font-size:28px;text-align:center;}
+.sidebar {background:purple;width:200px;vertical-align:top;}
+.content {background:#111;}
+.footer {background:darkred;text-align:center;font-size:12px;}
+.blink {animation: blink 1s steps(2,start) infinite;}
+@keyframes blink {to {visibility:hidden;}}
+button {cursor:pointer; margin:2px;}
+input {width:100%; padding:5px; margin:5px 0; box-sizing:border-box;}
 </style>
 
-<!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// Your web app's Firebase configuration
+/* 🔥 REPLACE WITH YOUR FIREBASE CONFIG */
 const firebaseConfig = {
   apiKey: "AIzaSyDDmNkZUqSmyzfQDTimULkOSQP1dJBJf44",
   authDomain: "gamester-4ed42.firebaseapp.com",
@@ -52,63 +38,60 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-/* Account creation */
+/* CREATE ACCOUNT */
 async function createAccount() {
     const username = document.getElementById("usernameBox").value.trim();
     const password = document.getElementById("passwordBox").value.trim();
-
     if(username === "" || password === "") {
         document.getElementById("loginStatus").innerHTML = "ENTER USERNAME AND PASSWORD!!!";
         return;
     }
-
     const email = username + "@gamester.fun";
-
     createUserWithEmailAndPassword(auth,email,password)
     .then(async ()=>{
         document.getElementById("loginStatus").innerHTML = "✔ ACCOUNT CREATED! Welcome <b>"+username+"</b>!";
-        // create profile in Firestore
         await setDoc(doc(db,"users",username),{
             username: username,
             displayName: username,
             score: 0,
-            bio: "I am new to Gamester!"
+            bio: "I am new to Gamester!",
+            joinDate: serverTimestamp()
         });
-        showAllProfiles();
+        await showAllProfiles();
     })
     .catch(err=>{
         document.getElementById("loginStatus").innerHTML = err.message;
     });
 }
 
-/* Login */
-function login() {
+/* LOGIN */
+async function login() {
     const username = document.getElementById("usernameBox").value.trim();
     const password = document.getElementById("passwordBox").value.trim();
     const email = username + "@gamester.fun";
-
     signInWithEmailAndPassword(auth,email,password)
-    .then(()=>{document.getElementById("loginStatus").innerHTML="✔ Logged in as <b>"+username+"</b>!";})
+    .then(async ()=>{
+        document.getElementById("loginStatus").innerHTML="✔ Logged in as <b>"+username+"</b>!";
+        await showAllProfiles();
+    })
     .catch(()=>{document.getElementById("loginStatus").innerHTML="WRONG LOGIN!!!";});
 }
 
-/* Logout */
-function logout(){
-    signOut(auth);
-}
+/* LOGOUT */
+function logout(){ signOut(auth); }
 
-/* Show game link */
-function showGameLink() {
+/* SHOW GAME LINK */
+function showGameLink(){
     document.getElementById("gameLinkArea").innerHTML =
         "CLICK THE LINK TO PLAY:<br><br>" +
         "<a href='https://drive.google.com/file/d/13srsf6tATf60bsFoflp6uOWZKzSP0ORE/view?usp=sharing'>▶ PLAY GAMERSTER ◀</a>";
 }
 
-/* Page navigation */
-function showHome() { document.getElementById("homePage").style.display="block"; document.getElementById("newsPage").style.display="none"; }
-function showNews() { document.getElementById("homePage").style.display="none"; document.getElementById("newsPage").style.display="block"; }
+/* PAGE NAVIGATION */
+function showHome(){document.getElementById("homePage").style.display="block"; document.getElementById("newsPage").style.display="none";}
+function showNews(){document.getElementById("homePage").style.display="none"; document.getElementById("newsPage").style.display="block";}
 
-/* Auto login display */
+/* AUTO LOGIN STATUS */
 onAuthStateChanged(auth,(user)=>{
     if(user){
         const username = user.email.replace("@gamester.fun","");
@@ -116,22 +99,24 @@ onAuthStateChanged(auth,(user)=>{
     }
 });
 
-/* View single profile */
+/* VIEW PROFILE */
 async function viewProfile(username){
     const docRef = doc(db,"users",username);
     const docSnap = await getDoc(docRef);
     if(docSnap.exists()){
         const data = docSnap.data();
+        const join = data.joinDate?.toDate ? data.joinDate.toDate().toLocaleString() : "Unknown";
         alert(
             "Username: "+data.username+"\n"+
             "Display Name: "+data.displayName+"\n"+
             "Score: "+data.score+"\n"+
-            "Bio: "+data.bio
+            "Bio: "+data.bio+"\n"+
+            "Join Date: "+join
         );
     } else { alert("Profile not found!"); }
 }
 
-/* Show all profiles as buttons */
+/* SHOW ALL PROFILES */
 async function showAllProfiles(){
     const querySnapshot = await getDocs(collection(db,"users"));
     const listDiv = document.getElementById("userList");
@@ -160,8 +145,6 @@ window.onload=function(){ showHome(); showAllProfiles(); }
 </head>
 
 <body>
-
-<p>&nbsp;</p>
 
 <center>
 <table width="900" cellspacing="0" cellpadding="10">
@@ -230,8 +213,7 @@ Password:<br>
 <!-- NEWS PAGE -->
 <div id="newsPage" style="display:none;">
 <h2>Gamester now has a website!</h2>
-<p>That’s right! Gamester has some updated faces and a cool new website.
-Watch ALL our trailers at https://youtube.com/@Gamester91</p>
+<p>That’s right! Gamester has some updated faces and a cool new website.</p>
 </div>
 
 </td>
@@ -242,7 +224,7 @@ Watch ALL our trailers at https://youtube.com/@Gamester91</p>
 © 2026-2029 Gamester.fun<br>
 Best viewed in 480x360 resolution | Chrome 143 Recommended
 </td>
-</tr> 
+</tr>
 
 </tbody>
 </table>
