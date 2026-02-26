@@ -5,108 +5,55 @@
 
 <style>
 html, body {
-    margin: 0;
-    padding: 0;
-    background-color: black;
-    font-family: "Comic Sans MS", "Comic Sans", cursive;
-    color: lime;
+    margin:0;
+    padding:0;
+    background:black;
+    font-family:"Comic Sans MS", cursive;
+    color:lime;
 }
-
 body {
     background: repeating-linear-gradient(
-        45deg,
-        #000000,
-        #000000 10px,
-        #111111 10px,
-        #111111 20px
+        45deg,#000,#000 10px,#111 10px,#111 20px
     );
     animation: bgmove 5s linear infinite;
 }
+@keyframes bgmove { from {background-position:0 0;} to {background-position:100px 100px;} }
 
-@keyframes bgmove {
-    from { background-position: 0 0; }
-    to { background-position: 100px 100px; }
-}
+a { color:yellow; font-weight:bold; cursor:pointer; }
 
-a {
-    color: yellow;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-table {
-    background-color: black;
-    border: 3px solid cyan;
-}
-
-.header {
-    background: navy;
-    color: white;
-    font-size: 28px;
-    text-align: center;
-}
-
-.sidebar {
-    background: purple;
-    width: 200px;
-    vertical-align: top;
-}
-
-.content {
-    background: #111;
-}
-
-.footer {
-    background: darkred;
-    text-align: center;
-    font-size: 12px;
-}
-
-.blink {
-    animation: blink 1s steps(2, start) infinite;
-}
-
-@keyframes blink {
-    to { visibility: hidden; }
-}
-
-button {
-    cursor: pointer;
-}
-input {
-    width: 100%;
-    padding: 5px;
-    margin: 5px 0;
-    box-sizing: border-box;
-}
+table { background:black; border:3px solid cyan; }
+.header { background:navy;color:white;font-size:28px;text-align:center; }
+.sidebar { background:purple;width:200px;vertical-align:top; }
+.content { background:#111; }
+.footer { background:darkred;text-align:center;font-size:12px; }
+.blink { animation: blink 1s steps(2,start) infinite; }
+@keyframes blink { to {visibility:hidden;} }
+button { cursor:pointer; margin:2px; }
+input { width:100%; padding:5px; margin:5px 0; box-sizing:border-box; }
 </style>
 
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { 
-  getAuth, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  onAuthStateChanged, 
-  signOut 
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* 🔥 REPLACE WITH YOUR FIREBASE CONFIG */
 const firebaseConfig = {
-  apiKey: "AIzaSyDDmNkZUqSmyzfQDTimULkOSQP1dJBJf44",
-  authDomain: "gamester-4ed42.firebaseapp.com",
-  projectId: "gamester-4ed42",
-  storageBucket: "gamester-4ed42.firebasestorage.app",
-  messagingSenderId: "282606109886",
-  appId: "1:282606109886:web:eec0b7d6077133eab4caef"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = getFirestore(app);
 
-/* Create Account */
-function createAccount() {
+/* Account creation */
+async function createAccount() {
     const username = document.getElementById("usernameBox").value.trim();
     const password = document.getElementById("passwordBox").value.trim();
 
@@ -115,13 +62,21 @@ function createAccount() {
         return;
     }
 
-    const email = username + "@gamester.fun"; // fake email for Firebase
+    const email = username + "@gamester.fun";
 
-    createUserWithEmailAndPassword(auth, email, password)
-    .then(() => {
-        document.getElementById("loginStatus").innerHTML = "✔ ACCOUNT CREATED! Welcome <b>" + username + "</b>!";
+    createUserWithEmailAndPassword(auth,email,password)
+    .then(async ()=>{
+        document.getElementById("loginStatus").innerHTML = "✔ ACCOUNT CREATED! Welcome <b>"+username+"</b>!";
+        // create profile in Firestore
+        await setDoc(doc(db,"users",username),{
+            username: username,
+            displayName: username,
+            score: 0,
+            bio: "I am new to Gamester!"
+        });
+        showAllProfiles();
     })
-    .catch((err) => {
+    .catch(err=>{
         document.getElementById("loginStatus").innerHTML = err.message;
     });
 }
@@ -130,54 +85,78 @@ function createAccount() {
 function login() {
     const username = document.getElementById("usernameBox").value.trim();
     const password = document.getElementById("passwordBox").value.trim();
-
     const email = username + "@gamester.fun";
 
-    signInWithEmailAndPassword(auth, email, password)
-    .then(() => {
-        document.getElementById("loginStatus").innerHTML = "✔ Logged in as <b>" + username + "</b>!";
-    })
-    .catch(() => {
-        document.getElementById("loginStatus").innerHTML = "WRONG LOGIN!!!";
-    });
+    signInWithEmailAndPassword(auth,email,password)
+    .then(()=>{document.getElementById("loginStatus").innerHTML="✔ Logged in as <b>"+username+"</b>!";})
+    .catch(()=>{document.getElementById("loginStatus").innerHTML="WRONG LOGIN!!!";});
+}
+
+/* Logout */
+function logout(){
+    signOut(auth);
 }
 
 /* Show game link */
 function showGameLink() {
-    const linkArea = document.getElementById("gameLinkArea");
-    linkArea.innerHTML =
+    document.getElementById("gameLinkArea").innerHTML =
         "CLICK THE LINK TO PLAY:<br><br>" +
-        "<a href='https://drive.google.com/file/d/13srsf6tATf60bsFoflp6uOWZKzSP0ORE/view?usp=sharing'>" +
-        "▶ PLAY GAMERSTER ◀</a>";
+        "<a href='https://drive.google.com/file/d/13srsf6tATf60bsFoflp6uOWZKzSP0ORE/view?usp=sharing'>▶ PLAY GAMERSTER ◀</a>";
 }
 
 /* Page navigation */
-function showHome() {
-    document.getElementById("homePage").style.display = "block";
-    document.getElementById("newsPage").style.display = "none";
-}
-function showNews() {
-    document.getElementById("homePage").style.display = "none";
-    document.getElementById("newsPage").style.display = "block";
-}
+function showHome() { document.getElementById("homePage").style.display="block"; document.getElementById("newsPage").style.display="none"; }
+function showNews() { document.getElementById("homePage").style.display="none"; document.getElementById("newsPage").style.display="block"; }
 
-/* Auto login state (optional) */
-onAuthStateChanged(auth, (user) => {
-    if(user) {
+/* Auto login display */
+onAuthStateChanged(auth,(user)=>{
+    if(user){
         const username = user.email.replace("@gamester.fun","");
-        document.getElementById("loginStatus").innerHTML = "Logged in as: <b>" + username + "</b>";
+        document.getElementById("loginStatus").innerHTML = "Logged in as: <b>"+username+"</b>";
     }
 });
 
-window.createAccount = createAccount;
-window.login = login;
-window.showGameLink = showGameLink;
-window.showHome = showHome;
-window.showNews = showNews;
+/* View single profile */
+async function viewProfile(username){
+    const docRef = doc(db,"users",username);
+    const docSnap = await getDoc(docRef);
+    if(docSnap.exists()){
+        const data = docSnap.data();
+        alert(
+            "Username: "+data.username+"\n"+
+            "Display Name: "+data.displayName+"\n"+
+            "Score: "+data.score+"\n"+
+            "Bio: "+data.bio
+        );
+    } else { alert("Profile not found!"); }
+}
 
-window.onload = showHome;
+/* Show all profiles as buttons */
+async function showAllProfiles(){
+    const querySnapshot = await getDocs(collection(db,"users"));
+    const listDiv = document.getElementById("userList");
+    listDiv.innerHTML="";
+    querySnapshot.forEach((doc)=>{
+        const username = doc.data().username;
+        const btn = document.createElement("button");
+        btn.innerText = username;
+        btn.onclick = ()=>viewProfile(username);
+        listDiv.appendChild(btn);
+    });
+}
+
+window.createAccount=createAccount;
+window.login=login;
+window.logout=logout;
+window.showGameLink=showGameLink;
+window.showHome=showHome;
+window.showNews=showNews;
+window.viewProfile=viewProfile;
+window.showAllProfiles=showAllProfiles;
+
+window.onload=function(){ showHome(); showAllProfiles(); }
+
 </script>
-
 </head>
 
 <body>
@@ -196,7 +175,6 @@ GAMERSTER OFFICIAL SITE<br>
 </tr>
 
 <tr>
-
 <td class="sidebar">
 <strong>Navigation</strong><br><br>
 <a onclick="showHome()">Home</a><br>
@@ -204,9 +182,7 @@ GAMERSTER OFFICIAL SITE<br>
 <a onclick="showHome()">Play Game</a><br>
 <a href="#">Guestbook</a><br>
 <a href="#">Links</a><br><br>
-
 <div class="blink">UNDER CONSTRUCTION</div>
-
 <br><br>
 Visitor Counter:<br>
 0001337
@@ -218,57 +194,43 @@ Visitor Counter:<br>
 <div id="homePage">
 
 <h2>Welcome to Gamester!</h2>
-
 <p>This is the OFFICIAL website for Gamester!!!</p>
 
 <hr>
 
 <h3>Member Login</h3>
-
 <div style="background:black; border:2px dashed cyan; padding:10px; width:300px;">
 Username:<br>
 <input type="text" id="usernameBox"><br><br>
-
 Password:<br>
 <input type="password" id="passwordBox"><br><br>
-
-<button onclick="login()" style="background:yellow; color:black; font-weight:bold;">
-LOGIN
-</button>
-
-<button onclick="createAccount()" style="background:lime; color:black; font-weight:bold;">
-MAKE ACCOUNT
-</button>
-
+<button onclick="login()" style="background:yellow;color:black;font-weight:bold;">LOGIN</button>
+<button onclick="createAccount()" style="background:lime;color:black;font-weight:bold;">MAKE ACCOUNT</button>
+<button onclick="logout()" style="background:red;color:white;font-weight:bold;">LOGOUT</button>
 <p id="loginStatus" style="color:lime;"></p>
 </div>
 
 <hr>
 
 <h3>Play</h3>
-
-<button onclick="showGameLink()"
-style="font-size:20px; background:lime; color:black;">
-CLICK HERE TO PLAY!!!
-</button>
-
+<button onclick="showGameLink()" style="font-size:20px;background:lime;color:black;">CLICK HERE TO PLAY!!!</button>
 <br><br>
+<div id="gameLinkArea" style="color:yellow;font-size:18px;"></div>
 
-<div id="gameLinkArea" style="color:yellow; font-size:18px;"></div>
+<hr>
+
+<h3>All Users</h3>
+<div id="userList"></div>
 
 <br>
-
 <div class="blink">BEST VIEWED IN 480x360</div>
 
 </div>
 
 <!-- NEWS PAGE -->
 <div id="newsPage" style="display:none;">
-
 <h2>Gamester now has a website!</h2>
-
 <p>That’s right! Gamester has some updated faces and a cool new website.</p>
-
 </div>
 
 </td>
