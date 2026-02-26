@@ -1,1 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>GAMERSTER OFFICIAL SITE</title>
 
+<style>
+body{
+    background:black;
+    color:lime;
+    font-family:"Comic Sans MS",cursive;
+    text-align:center;
+}
+input,button{
+    margin:5px;
+    padding:5px;
+}
+</style>
+
+<!-- FIREBASE -->
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+
+/* 🔥 REPLACE WITH YOUR CONFIG */
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+
+/* CREATE ACCOUNT */
+window.createAccount = function () {
+
+  const user = document.getElementById("usernameBox").value;
+  const pass = document.getElementById("passwordBox").value;
+
+  const fakeEmail = user + "@gamester.fun";
+
+  createUserWithEmailAndPassword(auth, fakeEmail, pass)
+    .then(() => {
+      document.getElementById("status").innerHTML =
+        "✔ ACCOUNT CREATED!";
+    })
+    .catch(err => {
+      document.getElementById("status").innerHTML =
+        err.message;
+    });
+};
+
+
+/* LOGIN */
+window.login = function () {
+
+  const user = document.getElementById("usernameBox").value;
+  const pass = document.getElementById("passwordBox").value;
+
+  const fakeEmail = user + "@gamester.fun";
+
+  signInWithEmailAndPassword(auth, fakeEmail, pass)
+    .then(() => {
+      document.getElementById("status").innerHTML =
+        "✔ LOGGED IN!";
+    })
+    .catch(() => {
+      document.getElementById("status").innerHTML =
+        "WRONG LOGIN!";
+    });
+};
+
+
+/* AUTO LOGIN STATUS */
+onAuthStateChanged(auth,(user)=>{
+  if(user){
+    document.getElementById("status").innerHTML =
+      "Logged in as: " + user.email.replace("@gamester.fun","");
+  }
+});
+
+
+/* LOGOUT */
+window.logout=function(){
+  signOut(auth);
+};
+
+</script>
+
+</head>
+
+<body>
+
+<h1>🔥 GAMERSTER OFFICIAL SITE 🔥</h1>
+
+<h3>Member Login</h3>
+
+Username<br>
+<input id="usernameBox"><br>
+
+Password<br>
+<input type="password" id="passwordBox"><br>
+
+<button onclick="login()">LOGIN</button>
+<button onclick="createAccount()">MAKE ACCOUNT</button>
+<button onclick="logout()">LOGOUT</button>
+
+<p id="status"></p>
+
+</body>
+</html>
